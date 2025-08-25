@@ -20,6 +20,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from django.shortcuts import redirect
 
 
 def redirect_to_admin(request):
