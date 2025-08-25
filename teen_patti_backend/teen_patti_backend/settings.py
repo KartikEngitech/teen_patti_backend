@@ -92,11 +92,15 @@ WSGI_APPLICATION = 'teen_patti_backend.wsgi.application'
 # }
 
 
+import dj_database_url
+import os
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.config(
+        default="postgresql://teen_patti_db:WZN59lrnxXr2VfP8DTu3FcluemVzHYjq@dpg-d2m027fdiees73cdkleg-a.oregon-postgres.render.com/teen_patti_db",
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 
