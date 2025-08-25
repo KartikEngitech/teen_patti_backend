@@ -113,7 +113,8 @@ DATABASES = {
         'NAME': 'teen_patti_db',
         'USER': 'teen_patti_db',
         'PASSWORD': 'WZN59lrnxXr2VfP8DTu3FcluemVzHYjq',
-        'HOST': 'dpg-d2m027fdiees73cdkleg-a.render.com',  # from Render dashboard
+        # 'HOST': 'dpg-d2m027fdiees73cdkleg-a.render.com',  # from Render dashboard
+        'HOST': 'postgresql://teen_patti_db:WZN59lrnxXr2VfP8DTu3FcluemVzHYjq@dpg-d2m027fdiees73cdkleg-a.oregon-postgres.render.com/teen_patti_db',  # from Render dashboard
         'PORT': '5432',
     }
 }
