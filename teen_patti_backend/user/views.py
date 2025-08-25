@@ -41,6 +41,111 @@ from drf_yasg import openapi
 logger = logging.getLogger(__name__)
 
 
+# class RegisterView(APIView):
+#     """
+#     A view for registering new admin users.
+
+#     This view supports POST method.
+
+#     POST:
+#     Registers a new admin user with a randomly generated code and the role set to 'admin'.
+#     Upon successful registration, a verification code is sent to the user's email for confirmation.
+
+#     Parameters:
+#     - request_data: The request data containing user information.
+    
+#     Returns:
+#     - 201 Created if the user is successfully created.
+#     - 500 Internal Server Error if an unexpected error occurs during processing.
+
+#     Explanation:
+#     1. Generate a random code for the user.
+#     2. Set the user's role to 'admin'.
+#     3. Validate the request data using the AdminSignupSerializer.
+#     4. Save the serialized data to create the user.
+#     5. Send the verification code to the user's email for confirmation.
+
+#     Note: Detailed error handling is implemented to handle unexpected errors.
+#     """
+#     authentication_classes = []
+#     @swagger_auto_schema(
+#         operation_description="Register a new user with optional referral code.",
+#         request_body=openapi.Schema(
+#             type=openapi.TYPE_OBJECT,
+#             required=["email", "role"],
+#             properties={
+#                 'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+#                 'role': openapi.Schema(type=openapi.TYPE_STRING, description="User role (admin/player)"),
+#                 'referral_code': openapi.Schema(type=openapi.TYPE_STRING, description="Optional referral code"),
+#             },
+#         ),
+#         responses={201: "User Created Successfully", 400: "Bad Request"}
+#     )
+#     # def post(self, request):
+#     #     try:
+#     #         request_data = request.data
+#     #         email = request.data['email']
+#     #         if UserAccount.objects.filter(email=email).exists() or \
+#     #             UserAccount.objects.filter(email_changed__contains=[{'old_email': email}]).exists():
+#     #                 return Response({'error': 'The new email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+#     #         request_data['code'] = generate_random_otp()
+#     #         request_data['role'] = request.data['role']
+#     #         serializer = RegisterSerializer(data=request_data)
+#     #         serializer.is_valid(raise_exception=True)
+#     #         serializer.save()
+#     #         sent_to = serializer.data['email']
+#     #         message = serializer.data['code']
+#     #         print(sent_to)
+#     #         codeverify(sent_to,message)
+#     #         return Response({'Response':'User Created Successfully'} , status=status.HTTP_201_CREATED)
+#     #     except KeyError as e:
+#     #         return Response({'error': f'Missing key: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+#     #     except Exception as e:
+#     #         return Response({'error': f'{e} Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+#     def post(self, request):
+#         try:
+#             request_data = request.data
+#             email = request_data['email']
+#             referral_code = request_data.get('referral_code')
+
+#             if UserAccount.objects.filter(email=email).exists() or \
+#                 UserAccount.objects.filter(email_changed__contains=[{'old_email': email}]).exists():
+#                 return Response({'error': 'The email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+
+#             request_data['code'] = generate_random_otp()
+#             request_data['role'] = request_data['role']
+
+#             if referral_code:
+#                 try:
+#                     print('hsdbfkbshk',referral_code)
+#                     referred_by = UserAccount.objects.get(referral_code=referral_code)
+#                     print('referral_code',referred_by.id)
+#                     if referred_by.verify:
+#                         request_data['referred_by'] = referred_by.id
+#                     else:
+#                         return Response({'error': 'Referral code is not verified.'}, status=status.HTTP_400_BAD_REQUEST)
+#                     request_data['referred_by'] = referred_by.id
+#                 except UserAccount.DoesNotExist:
+#                     return Response({'error': 'Invalid referral code.'}, status=status.HTTP_400_BAD_REQUEST)
+
+#             serializer = RegisterSerializer(data=request_data)
+#             serializer.is_valid(raise_exception=True)
+#             user = serializer.save()
+
+#             codeverify(user.email, user.code)
+
+#             return Response({
+#                 'response': 'User Created Successfully',
+#                 'referral_code': user.referral_code
+#             }, status=status.HTTP_201_CREATED)
+
+#         except KeyError as e:
+#             return Response({'error': f'Missing key: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+#         except Exception as e:
+#             return Response({'error': f'{e} Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class RegisterView(APIView):
     """
     A view for registering new admin users.
@@ -57,82 +162,57 @@ class RegisterView(APIView):
     Returns:
     - 201 Created if the user is successfully created.
     - 500 Internal Server Error if an unexpected error occurs during processing.
-
-    Explanation:
-    1. Generate a random code for the user.
-    2. Set the user's role to 'admin'.
-    3. Validate the request data using the AdminSignupSerializer.
-    4. Save the serialized data to create the user.
-    5. Send the verification code to the user's email for confirmation.
-
-    Note: Detailed error handling is implemented to handle unexpected errors.
     """
     authentication_classes = []
     @swagger_auto_schema(
         operation_description="Register a new user with optional referral code.",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=["email", "role"],
+            required=["email", "role", "username", "mobile", "password", "otp"],
             properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description="User name"),
                 'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+                'mobile': openapi.Schema(type=openapi.TYPE_STRING, description="User mobile number"),
+                'otp': openapi.Schema(type=openapi.TYPE_STRING, description="One Time Password"),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description="User password"),
                 'role': openapi.Schema(type=openapi.TYPE_STRING, description="User role (admin/player)"),
                 'referral_code': openapi.Schema(type=openapi.TYPE_STRING, description="Optional referral code"),
             },
         ),
         responses={201: "User Created Successfully", 400: "Bad Request"}
     )
-    # def post(self, request):
-    #     try:
-    #         request_data = request.data
-    #         email = request.data['email']
-    #         if UserAccount.objects.filter(email=email).exists() or \
-    #             UserAccount.objects.filter(email_changed__contains=[{'old_email': email}]).exists():
-    #                 return Response({'error': 'The new email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
-    #         request_data['code'] = generate_random_otp()
-    #         request_data['role'] = request.data['role']
-    #         serializer = RegisterSerializer(data=request_data)
-    #         serializer.is_valid(raise_exception=True)
-    #         serializer.save()
-    #         sent_to = serializer.data['email']
-    #         message = serializer.data['code']
-    #         print(sent_to)
-    #         codeverify(sent_to,message)
-    #         return Response({'Response':'User Created Successfully'} , status=status.HTTP_201_CREATED)
-    #     except KeyError as e:
-    #         return Response({'error': f'Missing key: {e}'}, status=status.HTTP_400_BAD_REQUEST)
-    #     except Exception as e:
-    #         return Response({'error': f'{e} Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
     def post(self, request):
         try:
             request_data = request.data
             email = request_data['email']
             referral_code = request_data.get('referral_code')
 
+            # Check for duplicate email
             if UserAccount.objects.filter(email=email).exists() or \
                 UserAccount.objects.filter(email_changed__contains=[{'old_email': email}]).exists():
                 return Response({'error': 'The email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
 
+            # Add generated code and role
             request_data['code'] = generate_random_otp()
             request_data['role'] = request_data['role']
 
+            # Handle referral code if provided
             if referral_code:
                 try:
-                    print('hsdbfkbshk',referral_code)
                     referred_by = UserAccount.objects.get(referral_code=referral_code)
-                    print('referral_code',referred_by.id)
                     if referred_by.verify:
                         request_data['referred_by'] = referred_by.id
                     else:
                         return Response({'error': 'Referral code is not verified.'}, status=status.HTTP_400_BAD_REQUEST)
-                    request_data['referred_by'] = referred_by.id
                 except UserAccount.DoesNotExist:
                     return Response({'error': 'Invalid referral code.'}, status=status.HTTP_400_BAD_REQUEST)
 
+            # Serialize and save
             serializer = RegisterSerializer(data=request_data)
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
 
+            # Send verification code
             codeverify(user.email, user.code)
 
             return Response({
@@ -144,6 +224,9 @@ class RegisterView(APIView):
             return Response({'error': f'Missing key: {e}'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': f'{e} Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 
 
 # verify user details
