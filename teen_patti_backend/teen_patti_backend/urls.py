@@ -21,8 +21,13 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+
+def redirect_to_admin(request):
+    return redirect('/admin/')
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
+    path('', redirect_to_admin),  # 👈 Root goes to admin
     path('',include('user.urls')),
     path('',include('game.urls')),
     path('',include('chats.urls')),
