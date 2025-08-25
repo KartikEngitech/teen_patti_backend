@@ -92,17 +92,29 @@ WSGI_APPLICATION = 'teen_patti_backend.wsgi.application'
 # }
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'teen_patti_db',
+#         'USER': 'root',
+#         'PASSWORD': '',
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'sql_mode': 'traditional'
+#         }
+#     }
+# }
+
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'teen_patti_db',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'sql_mode': 'traditional'
-        }
+        'USER': 'teen_patti_db',
+        'PASSWORD': 'WZN59lrnxXr2VfP8DTu3FcluemVzHYjq',
+        'HOST': 'dpg-d2m027fdiees73cdkleg-a.render.com',  # from Render dashboard
+        'PORT': '5432',
     }
 }
 
