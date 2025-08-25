@@ -33,6 +33,8 @@ from django.db import transaction
 from game.models import UserWallet
 from .utils import *
 from decimal import Decimal, InvalidOperation
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 # from candidateapp.models import FCMToken
 
@@ -66,6 +68,19 @@ class RegisterView(APIView):
     Note: Detailed error handling is implemented to handle unexpected errors.
     """
     authentication_classes = []
+    @swagger_auto_schema(
+        operation_description="Register a new user with optional referral code.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["email", "role"],
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+                'role': openapi.Schema(type=openapi.TYPE_STRING, description="User role (admin/player)"),
+                'referral_code': openapi.Schema(type=openapi.TYPE_STRING, description="Optional referral code"),
+            },
+        ),
+        responses={201: "User Created Successfully", 400: "Bad Request"}
+    )
     # def post(self, request):
     #     try:
     #         request_data = request.data
