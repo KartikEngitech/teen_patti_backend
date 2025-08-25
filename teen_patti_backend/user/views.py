@@ -169,6 +169,19 @@ class Verify(APIView):
     - 500 Internal Server Error if an unexpected error occurs during processing.
     """
     authentication_classes = []
+
+    @swagger_auto_schema(
+        operation_description="Verify user with code and email.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["code", "email"],
+            properties={
+                'code': openapi.Schema(type=openapi.TYPE_STRING, description="Verification code"),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+            },
+        ),
+        responses={200: "Verified", 403: "Code mismatch", 404: "Email not found"}
+    )
     
     # def post(self, request):
     #     try:
@@ -227,6 +240,33 @@ class Verify(APIView):
 class ReferralLinkView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="Get referral link for the authenticated user",
+        responses={
+            200: openapi.Response(
+                description="Referral link retrieved successfully",
+                examples={
+                    "application/json": {
+                        "referral_code": "ABC123",
+                        "referral_link": "https://teenpatti.com/register?ref=ABC123"
+                    }
+                }
+            ),
+            404: openapi.Response(
+                description="Referral code not found",
+                examples={
+                    "application/json": {"error": "Referral code not found for user."}
+                }
+            ),
+            500: openapi.Response(
+                description="Server error",
+                examples={
+                    "application/json": {"error": "Some error message"}
+                }
+            ),
+        }
+    )
+
     def get(self, request):
         try:
             user = request.user
@@ -252,6 +292,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class RetrieveUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve current authenticated user",
+        operation_description="Returns the authenticated user's profile details.",
+        responses={200: UserSerializer}
+    )
+
     def get(self, request):
         try:
             user = request.user
@@ -261,6 +307,13 @@ class RetrieveUserView(APIView):
             return Response(user.data, status=status.HTTP_200_OK)
         except Exception as e:
                 return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @swagger_auto_schema(
+        operation_summary="Update current authenticated user",
+        operation_description="Partially update the authenticated user's profile.",
+        request_body=UserSerializer,
+        responses={200: UserSerializer}
+    )
 
     def patch(self, request):
         try:
@@ -280,6 +333,29 @@ class RetrieveUserView(APIView):
 class RevokeAccessTokenView(APIView):
    authentication_classes = [CustomJWTAuthentication]
    permission_classes = [permissions.IsAuthenticated]
+
+   @swagger_auto_schema(
+        operation_summary="Revoke current access token",
+        operation_description="Revokes (blacklists) the currently authenticated access token.",
+        responses={
+            200: openapi.Response(
+                description="Token successfully blacklisted",
+                examples={
+                    "application/json": {
+                        "message": "Access token blacklisted"
+                    }
+                }
+            ),
+            500: openapi.Response(
+                description="Server error",
+                examples={
+                    "application/json": {
+                        "message": "Error Raised some error message"
+                    }
+                }
+            )
+        }
+    )
 
 
    def post(self, request):
@@ -314,6 +390,18 @@ class EmailResendView(APIView):
                         If any other error occurs, returns status code 500 with an error message.
         """
     authentication_classes = []
+
+    @swagger_auto_schema(
+        operation_description="Resend verification email.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["email"],
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+            },
+        ),
+        responses={200: "Email resent", 400: "Invalid", 404: "User not found"}
+    )
 
     def post(self, request):
         """
@@ -370,6 +458,8 @@ class EmailResendView(APIView):
 class ResetEmailView(APIView):
     authentication_classes = []
 
+    
+
     def add_email_change_record(self, user, old_email):
         """
         Add a record of the old email address change to the email_changed field.
@@ -381,6 +471,20 @@ class ResetEmailView(APIView):
         user.email_changed.append({'old_email': old_email, 'timestamp': timestamp.isoformat()})
         user.last_email_changed_at = timestamp
         user.save()
+
+    @swagger_auto_schema(
+        operation_description="Reset email with verification.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["old_email", "new_email", "password"],
+            properties={
+                'old_email': openapi.Schema(type=openapi.TYPE_STRING, description="Current email"),
+                'new_email': openapi.Schema(type=openapi.TYPE_STRING, description="New email"),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description="Password"),
+            },
+        ),
+        responses={200: "Email updated", 400: "Bad Request", 401: "Unauthorized"}
+    )
 
     def post(self, request):
         try:
@@ -417,8 +521,22 @@ class ResetEmailView(APIView):
 
 # Reset Email Verification
 class ResettingEmailVerify(APIView):
-   authentication_classes = []
-   def post(self,request):
+    authentication_classes = []
+
+    @swagger_auto_schema(
+        operation_description="Verify reset email with code and email.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["code", "email"],
+            properties={
+                'code': openapi.Schema(type=openapi.TYPE_STRING, description="Verification code"),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+            },
+        ),
+        responses={200: "Resetting email verified", 403: "Code mismatch", 404: "Email not found"}
+    )
+
+    def post(self,request):
       code = request.data['code']
       email = request.data['email']
       if UserAccount.objects.filter(email=email).exists():
@@ -437,6 +555,18 @@ class ResettingEmailVerify(APIView):
 
 class ForgotPasswordAPIView(APIView):
     authentication_classes = []
+
+    @swagger_auto_schema(
+        operation_description="Send password reset link to email.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["email"],
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+            },
+        ),
+        responses={200: "Password reset link sent", 404: "User not found"}
+    )
 
     def post(self, request):
         try:
@@ -476,6 +606,16 @@ class ForgotPasswordAPIView(APIView):
 class ResetPasswordAPIView(APIView):
     authentication_classes = []
 
+    @swagger_auto_schema(
+        operation_description="Reset password using uid, token, and new password.",
+        manual_parameters=[
+            openapi.Parameter('uid', openapi.IN_QUERY, description="Encoded user ID", type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('token', openapi.IN_QUERY, description="Password reset token", type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('new_password', openapi.IN_QUERY, description="New password", type=openapi.TYPE_STRING, required=True),
+        ],
+        responses={200: "Password reset successful", 400: "Invalid reset link"}
+    )
+
     def post(self, request):
         try:
             uidb64 = request.query_params.get('uid')
@@ -510,6 +650,53 @@ class ResetPasswordAPIView(APIView):
 
 class CustomProviderAuthView(ProviderAuthView):
     authentication_classes = []
+
+
+    @swagger_auto_schema(
+        operation_summary="Authenticate user with Google OAuth2",
+        operation_description="""
+        Handles Google OAuth2 callback and sets access/refresh tokens in cookies.
+        - If `state` matches an active session, the request proceeds.
+        - If user exists (by email), new tokens are generated.
+        - If successful, cookies `access` and `refresh` are set.
+        """,
+        manual_parameters=[
+            openapi.Parameter(
+                "state",
+                openapi.IN_QUERY,
+                description="Google OAuth2 state parameter",
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "email": openapi.Schema(type=openapi.TYPE_STRING, description="User email (optional, used if state session not matched)")
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="Tokens returned successfully",
+                examples={
+                    "application/json": {
+                        "access": "jwt-access-token",
+                        "refresh": "jwt-refresh-token",
+                        "role": "user"
+                    }
+                }
+            ),
+            201: openapi.Response(
+                description="User authenticated successfully and tokens set in cookies"
+            ),
+            500: openapi.Response(
+                description="Server error",
+                examples={
+                    "application/json": {"error": "Error message here"}
+                }
+            ),
+        }
+    )
 
     def post(self, request, *args, **kwargs):
         request.GET = request.GET.copy()
@@ -611,6 +798,41 @@ class CustomProviderAuthView(ProviderAuthView):
 class WalletBalanceView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+
+    @swagger_auto_schema(
+        operation_summary="Retrieve wallet balance",
+        operation_description="Get the wallet balance details for the authenticated user.",
+        responses={
+            200: openapi.Response(
+                description="Wallet balance retrieved successfully",
+                examples={
+                    "application/json": {
+                        "id": 1,
+                        "user": 5,
+                        "balance": "1500.50"
+                    }
+                }
+            ),
+            404: openapi.Response(
+                description="Wallet not found for the user.",
+                examples={
+                    "application/json": {
+                        "error": "Wallet not found for the user."
+                    }
+                }
+            ),
+            500: openapi.Response(
+                description="Unexpected error",
+                examples={
+                    "application/json": {
+                        "error": "An unexpected error occurred.",
+                        "details": "Some error details here"
+                    }
+                }
+            ),
+        }
+    )
+
     def get(self, request):
         try:
             wallet = request.user.wallet
@@ -626,6 +848,18 @@ class WalletBalanceView(APIView):
     
 class RechargeAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Recharge wallet.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["amount"],
+            properties={
+                'amount': openapi.Schema(type=openapi.TYPE_NUMBER, format="decimal", description="Recharge amount"),
+            },
+        ),
+        responses={200: "Recharge successful", 400: "Invalid request"}
+    )
 
     def post(self, request):
         try:
