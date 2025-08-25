@@ -28,6 +28,7 @@ def redirect_to_admin(request):
 
 urlpatterns = [
     # path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls),   # ✅ enable default Django admin
     path('', redirect_to_admin),  # 👈 Root goes to admin
     path('',include('user.urls')),
     path('',include('game.urls')),
