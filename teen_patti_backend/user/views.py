@@ -193,7 +193,7 @@ class RegisterView(APIView):
                 return Response({'error': 'The email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Add generated code and role
-            request_data['code'] = generate_random_otp()
+            request_data['code'] = "123456"
             request_data['role'] = request_data['role']
 
             # Handle referral code if provided
@@ -217,7 +217,8 @@ class RegisterView(APIView):
 
             return Response({
                 'response': 'User Created Successfully',
-                'referral_code': user.referral_code
+                'referral_code': user.referral_code,
+                'otp': "123456"
             }, status=status.HTTP_201_CREATED)
 
         except KeyError as e:
