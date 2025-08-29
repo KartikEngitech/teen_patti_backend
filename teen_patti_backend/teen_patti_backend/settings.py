@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'djoser',
     'channels',
     'drf_yasg',
+    'cashmastertable.apps.CashmastertableConfig',
 ]
 
 
