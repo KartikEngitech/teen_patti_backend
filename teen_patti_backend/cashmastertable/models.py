@@ -1,6 +1,5 @@
-# cashmastertable/models.py----------Aarti
-
 from django.db import models
+from django.conf import settings
 
 class GameTable(models.Model):
     boot_price = models.PositiveIntegerField(default=1000)
@@ -12,15 +11,18 @@ class GameTable(models.Model):
         return f"Table {self.id} - Boot: ₹{self.boot_price}"
 
 class Player(models.Model):
-    game_table = models.ForeignKey(GameTable, related_name="players_info", on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    game_table = models.ForeignKey(GameTable, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    seat_position = models.PositiveIntegerField(help_text="Seat around the table")
+    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    seat_position = models.PositiveIntegerField()
     is_waiting = models.BooleanField(default=True)
     is_current_turn = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.name} at seat {self.seat_position}"
 
 class GameRound(models.Model):
     game_table = models.ForeignKey(GameTable, related_name="rounds", on_delete=models.CASCADE)
@@ -37,7 +39,7 @@ class PlayerAction(models.Model):
         ('pack', 'Pack'),
         ('slide', 'Slide'),
     ]
-    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, related_name="actions", on_delete=models.CASCADE)
     round = models.ForeignKey(GameRound, related_name="actions", on_delete=models.CASCADE)
     action = models.CharField(max_length=10, choices=ACTION_TYPES)
     timestamp = models.DateTimeField(auto_now_add=True)

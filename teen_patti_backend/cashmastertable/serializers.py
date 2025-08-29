@@ -1,5 +1,3 @@
-# cashmastertable/serializers.py
-
 from rest_framework import serializers
 from .models import GameTable, Player, GameRound, PlayerAction
 
@@ -10,18 +8,20 @@ class PlayerSerializer(serializers.ModelSerializer):
 
 class PlayerActionSerializer(serializers.ModelSerializer):
     player = PlayerSerializer(read_only=True)
+
     class Meta:
         model = PlayerAction
         fields = ['id', 'player', 'action', 'timestamp']
 
 class GameRoundSerializer(serializers.ModelSerializer):
     actions = PlayerActionSerializer(many=True, read_only=True)
+
     class Meta:
         model = GameRound
-        fields = ['id', 'round_number', 'started_at', 'ended_at', 'actions']
+        fields = ['id', 'round_number', 'game_table', 'started_at', 'ended_at', 'actions']
 
 class GameTableSerializer(serializers.ModelSerializer):
-    players_info = PlayerSerializer(many=True, read_only=True)
+    players_info = PlayerSerializer(many=True, read_only=True, source='player_set')
     rounds = GameRoundSerializer(many=True, read_only=True)
 
     class Meta:
