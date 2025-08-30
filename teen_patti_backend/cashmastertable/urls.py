@@ -1,6 +1,6 @@
 from django.urls import path
 # from rest_framework.routers import DefaultRouter
-from .views import GameTableView, PlayerViewSet, GameRoundViewSet, PlayerActionViewSet
+from .views import GameTableView, PlayerView, GameRoundView, PlayerActionView
 
 # router = DefaultRouter()
 # # router.register(r'game-tables', GameTableViewSet, basename='gametable')
