@@ -3,15 +3,32 @@ from rest_framework.response import Response
 from .models import GameTable, Player, GameRound, PlayerAction
 from .serializers import GameTableSerializer, PlayerSerializer, GameRoundSerializer, PlayerActionSerializer
 
-class GameTableViewSet(viewsets.ModelViewSet):
-    queryset = GameTable.objects.all()
-    serializer_class = GameTableSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# class GameTableViewSet(viewsets.ModelViewSet):
+#     queryset = GameTable.objects.all()
+#     serializer_class = GameTableSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+class GameTableView(APIView):
+    permission_classes = [permissions.IsAuthenticated]  # require login
+
+    def get(self, request):
+        """List all game tables"""
+        tables = GameTable.objects.all().order_by("id")
+        serializer = GameTableSerializer(tables, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """Create a new game table"""
+        serializer = GameTableSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PlayerViewSet(viewsets.ModelViewSet):
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
     permission_classes = [permissions.IsAuthenticated]
+
 
     def get_queryset(self):
         # Only players belonging to the same table as the requesting user

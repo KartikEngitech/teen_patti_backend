@@ -10,4 +10,7 @@ router.register(r'actions', PlayerActionViewSet, basename='playeraction')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('game_tables/', GameTableView.as_view(), name='game-tables'),
 ]
+
+

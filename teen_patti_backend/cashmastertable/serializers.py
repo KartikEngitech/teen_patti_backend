@@ -20,10 +20,17 @@ class GameRoundSerializer(serializers.ModelSerializer):
         model = GameRound
         fields = ['id', 'round_number', 'game_table', 'started_at', 'ended_at', 'actions']
 
-class GameTableSerializer(serializers.ModelSerializer):
-    players_info = PlayerSerializer(many=True, read_only=True, source='player_set')
-    rounds = GameRoundSerializer(many=True, read_only=True)
+# class GameTableSerializer(serializers.ModelSerializer):
+#     players_info = PlayerSerializer(many=True, read_only=True, source='player_set')
+#     rounds = GameRoundSerializer(many=True, read_only=True)
 
+#     class Meta:
+#         model = GameTable
+#         fields = ['id', 'boot_price', 'max_bet_value', 'players', 'max_players', 'players_info', 'rounds']
+
+
+
+class GameTableSerializer(serializers.ModelSerializer):
     class Meta:
         model = GameTable
-        fields = ['id', 'boot_price', 'max_bet_value', 'players', 'max_players', 'players_info', 'rounds']
+        fields = '__all__'
