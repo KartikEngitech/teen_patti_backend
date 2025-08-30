@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-class GameTable(models.Model):
+class MasterGameTable(models.Model):
     boot_price = models.PositiveIntegerField(default=1000)
     max_bet_value = models.CharField(max_length=20)
     players = models.PositiveIntegerField(default=0)

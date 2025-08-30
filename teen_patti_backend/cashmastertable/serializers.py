@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import GameTable, Player, GameRound, PlayerAction
+from .models import MasterGameTable, Player, GameRound, PlayerAction
 
 class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,5 +32,5 @@ class GameRoundSerializer(serializers.ModelSerializer):
 
 class GameTableSerializer(serializers.ModelSerializer):
     class Meta:
-        model = GameTable
+        model = MasterGameTable
         fields = '__all__'

@@ -13,17 +13,10 @@ class GameTableView(APIView):
 
     def get(self, request):
         """List all game tables"""
-        tables = GameTable.objects.all().order_by("id")
+        tables = MasterGameTable.objects.all().order_by("id")
         serializer = GameTableSerializer(tables, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request):
-        """Create a new game table"""
-        serializer = GameTableSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PlayerViewSet(viewsets.ModelViewSet):
     queryset = Player.objects.all()
