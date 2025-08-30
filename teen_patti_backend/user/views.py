@@ -172,8 +172,8 @@ class RegisterView(APIView):
             properties={
                 'username': openapi.Schema(type=openapi.TYPE_STRING, description="User name"),
                 'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
-                'mobile': openapi.Schema(type=openapi.TYPE_STRING, description="User mobile number"),
-                'otp': openapi.Schema(type=openapi.TYPE_STRING, description="One Time Password"),
+                'phone_number': openapi.Schema(type=openapi.TYPE_STRING, description="User mobile number"),
+                'code': openapi.Schema(type=openapi.TYPE_STRING, description="One Time Password"),
                 'password': openapi.Schema(type=openapi.TYPE_STRING, description="User password"),
                 'role': openapi.Schema(type=openapi.TYPE_STRING, description="User role (admin/player)"),
                 'referral_code': openapi.Schema(type=openapi.TYPE_STRING, description="Optional referral code"),

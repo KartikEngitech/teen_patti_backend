@@ -11,7 +11,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     class Meta:
         model = UserAccount
-        fields = ['id', 'email', 'role','code' ,'password','created_at','phone_number','referred_by']
+        # fields = ['id', 'email', 'role','code' ,'password','created_at','phone_number','referred_by']
+        fields = [
+            'id', 'username', 'email', 'phone_number', 'password',
+            'code', 'role', 'referred_by', 'referral_code'
+        ]
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
