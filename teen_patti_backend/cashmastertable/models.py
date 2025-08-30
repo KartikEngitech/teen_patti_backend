@@ -17,7 +17,7 @@ class Player(models.Model):
         null=True,
         blank=True
     )
-    game_table = models.ForeignKey(GameTable, on_delete=models.CASCADE)
+    game_table = models.ForeignKey(MasterGameTable, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     seat_position = models.PositiveIntegerField()
@@ -25,7 +25,7 @@ class Player(models.Model):
     is_current_turn = models.BooleanField(default=False)
 
 class GameRound(models.Model):
-    game_table = models.ForeignKey(GameTable, related_name="rounds", on_delete=models.CASCADE)
+    game_table = models.ForeignKey(MasterGameTable, related_name="rounds", on_delete=models.CASCADE)
     round_number = models.PositiveIntegerField()
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField(null=True, blank=True)
