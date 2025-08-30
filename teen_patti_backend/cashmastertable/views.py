@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import GameTable, Player, GameRound, PlayerAction
+from .models import MasterGameTable, Player, GameRound, PlayerAction
 from .serializers import GameTableSerializer, PlayerSerializer, GameRoundSerializer, PlayerActionSerializer
 
 # class GameTableViewSet(viewsets.ModelViewSet):
@@ -18,36 +18,49 @@ class GameTableView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class PlayerViewSet(viewsets.ModelViewSet):
-    queryset = Player.objects.all()
-    serializer_class = PlayerSerializer
+class PlayerView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request):
+        players = Player.objects.all().order_by("id")
+        serializer = PlayerSerializer(players, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get_queryset(self):
-        # Only players belonging to the same table as the requesting user
-        auth_user = self.request.user
-        return Player.objects.filter(user=auth_user)
+    def post(self, request):
+        serializer = PlayerSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class GameRoundViewSet(viewsets.ModelViewSet):
-    queryset = GameRound.objects.all()
-    serializer_class = GameRoundSerializer
+
+class GameRoundView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-class PlayerActionViewSet(viewsets.ModelViewSet):
-    queryset = PlayerAction.objects.all()
-    serializer_class = PlayerActionSerializer
+    def get(self, request):
+        rounds = GameRound.objects.all().order_by("id")
+        serializer = GameRoundSerializer(rounds, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = GameRoundSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PlayerActionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=401)
+    def get(self, request):
+        actions = PlayerAction.objects.all().order_by("id")
+        serializer = PlayerActionSerializer(actions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-        # Assign authenticated user's Player object
-        try:
-            player = Player.objects.get(user=request.user)
-        except Player.DoesNotExist:
-            return Response({"error": "Player not found for user"}, status=400)
-
-        request.data['player'] = player.id
-        return super().create(request, *args, **kwargs)
+    def post(self, request):
+        serializer = PlayerActionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
