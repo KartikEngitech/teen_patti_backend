@@ -218,7 +218,7 @@ class RegisterView(APIView):
             return Response({
                 'response': 'User Created Successfully',
                 'referral_code': user.referral_code,
-                'otp': "123456"
+                'code': "123456"
             }, status=status.HTTP_201_CREATED)
 
         except KeyError as e:

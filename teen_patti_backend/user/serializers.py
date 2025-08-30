@@ -31,7 +31,9 @@ class UserSerializer(serializers.ModelSerializer):
 class UserAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAccount
-        fields = ['id','email']
+        # fields = ['id','email']
+        fields = "__all__"   # include all fields from UserAccount
+
 
 
 class RevokedTokenSerializer(serializers.ModelSerializer):
@@ -75,6 +77,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # if fcm_token:
         #     FCMToken.objects.update_or_create(user=self.user, defaults={'token': fcm_token})
 
+        # data['role'] = self.user.role
+        # return data
+
+        # Add all user data
+        user_data = UserAccountSerializer(self.user).data
+        data['user'] = user_data   # attach all user model fields
         data['role'] = self.user.role
         return data
     
