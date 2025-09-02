@@ -4,27 +4,55 @@ from rest_framework.views import APIView
 from rest_framework import status
 from .models import MasterGameTable, Player, GameRound, PlayerAction
 from user.models import UserAccount
+from game.models import Player
 from .serializers import GameTableSerializer, PlayerSerializer, GameRoundSerializer, PlayerActionSerializer
 
 # class GameTableViewSet(viewsets.ModelViewSet):
 #     queryset = GameTable.objects.all()
 #     serializer_class = GameTableSerializer
 #     permission_classes = [permissions.IsAuthenticated]
+# class GameTableView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]  # require login
+
+#     def get(self, request):
+#         """List all game tables"""
+#         tables = MasterGameTable.objects.all().order_by("id")
+#         serializer = GameTableSerializer(tables, many=True)
+
+#         # count online users
+#         online_users_count = UserAccount.objects.filter(is_online=True).count()
+
+#         return Response({
+#                 "tables": serializer.data,
+#                 "online_users": online_users_count
+#             }, status=status.HTTP_200_OK)
+
+
+
 class GameTableView(APIView):
     permission_classes = [permissions.IsAuthenticated]  # require login
 
     def get(self, request):
-        """List all game tables"""
+        """List all game tables with online users"""
         tables = MasterGameTable.objects.all().order_by("id")
-        serializer = GameTableSerializer(tables, many=True)
 
-        # count online users
-        online_users_count = UserAccount.objects.filter(is_online=True).count()
+        response_data = []
+        for table in tables:
+            # count how many players are online in this table
+            online_users_count = Player.objects.filter(
+                is_active=True, # assumes Player model has FK to MasterGameTable
+            ).count()
 
-        return Response({
-                "tables": serializer.data,
+            response_data.append({
+                "id": table.id,
+                "boot_price": table.boot_price,
+                "max_bet_value": table.max_bet_value,
+                "players": table.players,
+                "max_players": table.max_players,
                 "online_users": online_users_count
-            }, status=status.HTTP_200_OK)
+            })
+
+        return Response({"tables": response_data}, status=status.HTTP_200_OK)
 
 
 class PlayerView(APIView):
