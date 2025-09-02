@@ -16,7 +16,14 @@ class GameTableView(APIView):
         """List all game tables"""
         tables = MasterGameTable.objects.all().order_by("id")
         serializer = GameTableSerializer(tables, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # count online users
+        online_users_count = UserAccount.objects.filter(is_online=True).count()
+
+        return Response({
+                "tables": serializer.data,
+                "online_users": online_users_count
+            }, status=status.HTTP_200_OK)
 
 
 class PlayerView(APIView):
