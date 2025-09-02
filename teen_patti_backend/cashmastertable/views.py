@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from .models import MasterGameTable, Player, GameRound, PlayerAction
-from users.models import UserAccount
+from user.models import UserAccount
 from .serializers import GameTableSerializer, PlayerSerializer, GameRoundSerializer, PlayerActionSerializer
 
 # class GameTableViewSet(viewsets.ModelViewSet):
