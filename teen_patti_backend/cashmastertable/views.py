@@ -52,7 +52,7 @@ class GameTableView(APIView):
                 "online_users": online_users_count
             })
 
-        return Response({"tables": response_data}, status=status.HTTP_200_OK)
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class PlayerView(APIView):
