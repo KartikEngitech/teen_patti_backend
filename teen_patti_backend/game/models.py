@@ -17,6 +17,8 @@ class GameTable(models.Model):
     max_blind = models.IntegerField(null=True, blank=True)
     has_started = models.BooleanField(default=False)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_games',blank=True, null=True)
+    # ✅ Link to MasterGameTable inside cashmastertable app
+    master_table = models.ForeignKey('cashmastertable.MasterGameTable', on_delete=models.CASCADE, related_name='game_tables',null=True)
 
     def __str__(self):
         return f"GameTable {self.id}"
