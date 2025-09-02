@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from .models import MasterGameTable, Player, GameRound, PlayerAction
+from .models import MasterGameTable, Player, GameRound, PlayerAction UserAccount
 from .serializers import GameTableSerializer, PlayerSerializer, GameRoundSerializer, PlayerActionSerializer
 
 # class GameTableViewSet(viewsets.ModelViewSet):
