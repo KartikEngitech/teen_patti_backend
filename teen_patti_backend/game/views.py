@@ -227,33 +227,48 @@ class DistributeCardsView(APIView):
 
 
     def get(self, request):
-        """Retrieve the cards assigned to the logged-in player for a specific game."""
+        """Retrieve the cards and GameTable values for the logged-in player using MasterGameTable ID."""
         try:
-            game_id = request.query_params.get('game_id')
+            master_id = request.query_params.get('game_id')
 
-            if not game_id:
+            if not master_id:
                 return Response({'error': 'Game ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # ✅ get the master table
-            master_game = MasterGameTable.objects.get(id=game_id)
+            # ✅ get MasterGameTable
+            master_game = MasterGameTable.objects.get(id=master_id)
 
-            # ✅ find the player for this user in any GameTable under this MasterGameTable
-            player = Player.objects.get(user=request.user, game__game_master_table=master_game)
+            # ✅ get all GameTables linked to this MasterGameTable
+            game_tables = master_game.game_tables.all()
+            if not game_tables.exists():
+                return Response({'error': 'No GameTable linked to this MasterGameTable'}, status=status.HTTP_404_NOT_FOUND)
 
-            # ✅ fetch cards for that player (Card is linked to GameTable, not MasterGameTable)
+            # ✅ find the player for this user inside one of the linked GameTables
+            player = Player.objects.filter(user=request.user, game__in=game_tables).first()
+            if not player:
+                return Response({'error': 'Player not found in this game'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # ✅ get player’s cards
             cards = Card.objects.filter(player=player, game=player.game)
-
             if not cards.exists():
                 return Response({'message': 'No cards found for this player'}, status=status.HTTP_404_NOT_FOUND)
 
             serializer = CardSerializer(cards, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
 
-        except Player.DoesNotExist:
-            return Response({'error': 'Player not found in this game'}, status=status.HTTP_400_BAD_REQUEST)
+            # ✅ include GameTable values (from the player’s GameTable)
+            game_data = {
+                "boot_amount": player.game.boot_amount,
+                "pot_limit": player.game.pot_limit,
+                "max_blind": player.game.max_blind,
+                "chaal_limit": player.game.chaal_limit,
+            }
 
-        except MasterGameTable.DoesNotExist:  # ✅ changed from GameTable
-            return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "game": game_data,
+                "cards": serializer.data
+            }, status=status.HTTP_200_OK)
+
+        except MasterGameTable.DoesNotExist:
+            return Response({'error': 'MasterGameTable not found'}, status=status.HTTP_400_BAD_REQUEST)
 
 
     # def get(self, request):
