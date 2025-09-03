@@ -20,6 +20,11 @@ class GameTable(models.Model):
     # ✅ Link to MasterGameTable inside cashmastertable app
     # game_master_table = models.ForeignKey('cashmastertable.MasterGameTable', on_delete=models.CASCADE, related_name='game_tables',null=True)
 
+    boot_price = models.PositiveIntegerField(default=1000)
+    max_bet_value = models.CharField(max_length=20, default="100")
+    # max_ = models.PositiveIntegerField(default=0)
+    max_players = models.PositiveIntegerField(default=5)
+
     def __str__(self):
         return f"GameTable {self.id}"
 
