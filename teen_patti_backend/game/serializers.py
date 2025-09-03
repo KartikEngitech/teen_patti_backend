@@ -7,6 +7,9 @@ class GameTableSerializer(serializers.ModelSerializer):
         model = GameTable
         fields = '__all__'
 
+    def get_online_users(self, obj):
+        return obj.players.filter(is_active=True).count()
+
 
 class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
