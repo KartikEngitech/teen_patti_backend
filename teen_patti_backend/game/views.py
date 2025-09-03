@@ -249,29 +249,29 @@ class DistributeCardsView(APIView):
 
 
     def post(self, request):
-    """Distribute 3 random cards to each player in the game."""
-    try:
-        game_id = request.query_params.get('game_id')
-        game = MasterGameTable.objects.get(id=game_id)   # ✅ Master table instance
+        """Distribute 3 random cards to each player in the game."""
+        try:
+            game_id = request.query_params.get('game_id')
+            game = MasterGameTable.objects.get(id=game_id)   # ✅ Master table instance
 
-        # ✅ get all players via GameTable linked to this MasterGameTable
-        players = Player.objects.filter(game__game_master_table=game)
+            # ✅ get all players via GameTable linked to this MasterGameTable
+            players = Player.objects.filter(game__game_master_table=game)
 
-        suits = ['hearts', 'diamonds', 'clubs', 'spades']
-        ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-        deck = [{'suit': s, 'rank': r} for s in suits for r in ranks]
-        random.shuffle(deck)
+            suits = ['hearts', 'diamonds', 'clubs', 'spades']
+            ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+            deck = [{'suit': s, 'rank': r} for s in suits for r in ranks]
+            random.shuffle(deck)
 
-        for player in players:
-            for _ in range(3):
-                card = deck.pop()
-                Card.objects.create(suit=card['suit'], rank=card['rank'], player=player, game=player.game)  
-                # ✅ use player.game (GameTable) instead of MasterGameTable
+            for player in players:
+                for _ in range(3):
+                    card = deck.pop()
+                    Card.objects.create(suit=card['suit'], rank=card['rank'], player=player, game=player.game)  
+                    # ✅ use player.game (GameTable) instead of MasterGameTable
 
-        return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
+            return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
 
-    except MasterGameTable.DoesNotExist:
-        return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
+        except MasterGameTable.DoesNotExist:
+            return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
