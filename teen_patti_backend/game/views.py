@@ -14,7 +14,6 @@ from asgiref.sync import async_to_sync
 from .serializers import PlayerSerializer
 from .utils import  *
 from datetime import date
-from cashmastertable.models import MasterGameTable
 
 class GameTableView(APIView):
     permission_classes = [IsAuthenticated]
@@ -225,154 +224,50 @@ class PlayerView(APIView):
 class DistributeCardsView(APIView):
     permission_classes = [IsAuthenticated]
 
-
     def get(self, request):
-        """Retrieve the cards and GameTable values for the logged-in player using MasterGameTable ID."""
+        """Retrieve the cards assigned to the logged-in player for a specific game."""
         try:
-            master_id = request.query_params.get('game_id')
+            game_id = request.query_params.get('game_id')
 
-            if not master_id:
+            if not game_id:
                 return Response({'error': 'Game ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # ✅ get MasterGameTable
-            master_game = MasterGameTable.objects.get(id=master_id)
-
-            # ✅ get all GameTables linked to this MasterGameTable
-            game_tables = master_game.game_tables.all()
-            if not game_tables.exists():
-                return Response({'error': 'No GameTable linked to this MasterGameTable'}, status=status.HTTP_404_NOT_FOUND)
-
-            # ✅ find the player for this user inside one of the linked GameTables
-            player = Player.objects.filter(user=request.user, game__in=game_tables).first()
-            if not player:
-                return Response({'error': 'Player not found in this game'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # ✅ get player’s cards
-            cards = Card.objects.filter(player=player, game=player.game)
+            player = Player.objects.get(user=request.user, game_id=game_id)
+            cards = Card.objects.filter(player=player, game_id=game_id)
+            
             if not cards.exists():
                 return Response({'message': 'No cards found for this player'}, status=status.HTTP_404_NOT_FOUND)
 
             serializer = CardSerializer(cards, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
-            # ✅ include GameTable values (from the player’s GameTable)
-            game_data = {
-                "boot_amount": player.game.boot_amount,
-                "pot_limit": player.game.pot_limit,
-                "max_blind": player.game.max_blind,
-                "chaal_limit": player.game.chaal_limit,
-            }
+        except Player.DoesNotExist:
+            return Response({'error': 'Player not found in this game'}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({
-                "game": game_data,
-                "cards": serializer.data
-            }, status=status.HTTP_200_OK)
-
-        except MasterGameTable.DoesNotExist:
-            return Response({'error': 'MasterGameTable not found'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-    # def get(self, request):
-    #     """Retrieve the cards assigned to the logged-in player for a specific game."""
-    #     try:
-    #         game_id = request.query_params.get('game_id')
-
-    #         if not game_id:
-    #             return Response({'error': 'Game ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-    #         player = Player.objects.get(user=request.user, game_id=game_id)
-    #         cards = Card.objects.filter(player=player, game_id=game_id)
-            
-    #         if not cards.exists():
-    #             return Response({'message': 'No cards found for this player'}, status=status.HTTP_404_NOT_FOUND)
-
-    #         serializer = CardSerializer(cards, many=True)
-    #         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    #     except Player.DoesNotExist:
-    #         return Response({'error': 'Player not found in this game'}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     except GameTable.DoesNotExist:
-    #         return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
+        except GameTable.DoesNotExist:
+            return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
 
 
     def post(self, request):
-        """Distribute 3 random cards to each player in the game and update GameTable from MasterGameTable values."""
+        """Distribute 3 random cards to each player in the game."""
         try:
             game_id = request.query_params.get('game_id')
-            master_game = MasterGameTable.objects.get(id=game_id)   # ✅ MasterGameTable instance
+            game = GameTable.objects.get(id=game_id)
+            players = game.players.all()
 
-            # ✅ Ensure at least one GameTable exists for this MasterGameTable
-            game_table, created = GameTable.objects.get_or_create(
-                game_master_table=master_game,
-                defaults={
-                    "boot_amount": Decimal(master_game.boot_price),
-                    "pot_limit": Decimal(master_game.max_bet_value) if master_game.max_bet_value else 0,
-                    "max_blind": master_game.max_players,
-                    "chaal_limit": master_game.players,
-                    "created_by": request.user
-                }
-            )
-
-            # ✅ Update all GameTables linked to this Master
-            game_tables = GameTable.objects.filter(game_master_table=master_game)
-            for g in game_tables:
-                g.boot_amount = Decimal(master_game.boot_price)
-                g.pot_limit = Decimal(master_game.max_bet_value) if master_game.max_bet_value else 0
-                g.max_blind = master_game.max_players
-                g.chaal_limit = master_game.players
-                g.save()
-
-            # ✅ Get all players under these GameTables
-            players = Player.objects.filter(game__in=game_tables)
-            if not players.exists():
-                return Response({'error': 'No players found for this game'}, status=status.HTTP_404_NOT_FOUND)
-
-            # ✅ Create shuffled deck
             suits = ['hearts', 'diamonds', 'clubs', 'spades']
             ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
             deck = [{'suit': s, 'rank': r} for s in suits for r in ranks]
             random.shuffle(deck)
 
-            # ✅ Distribute 3 cards each
             for player in players:
                 for _ in range(3):
                     card = deck.pop()
-                    Card.objects.create(
-                        suit=card['suit'],
-                        rank=card['rank'],
-                        player=player,
-                        game=player.game   # GameTable
-                    )
+                    Card.objects.create(suit=card['suit'], rank=card['rank'], player=player, game=game)
 
-            return Response({'message': 'Cards distributed successfully and GameTable updated'}, status=status.HTTP_200_OK)
-
-        except MasterGameTable.DoesNotExist:
+            return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
+        except GameTable.DoesNotExist:
             return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-    # def post(self, request):
-    #     """Distribute 3 random cards to each player in the game."""
-    #     try:
-    #         game_id = request.query_params.get('game_id')
-    #         # game = GameTable.objects.get(id=game_id)
-    #         game = MasterGameTable.objects.get(id=game_id)   # ✅ changed to MasterGameTable
-    #         # players = game.players.all()  # ⚠️ see note below
-    #         players = game.players.all()
-
-    #         suits = ['hearts', 'diamonds', 'clubs', 'spades']
-    #         ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-    #         deck = [{'suit': s, 'rank': r} for s in suits for r in ranks]
-    #         random.shuffle(deck)
-
-    #         for player in players:
-    #             for _ in range(3):
-    #                 card = deck.pop()
-    #                 Card.objects.create(suit=card['suit'], rank=card['rank'], player=player, game=game)
-
-    #         return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
-    #     except GameTable.DoesNotExist:
-    #         return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
