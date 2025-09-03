@@ -301,36 +301,39 @@ class DistributeCardsView(APIView):
             game_id = request.query_params.get('game_id')
             master_game = MasterGameTable.objects.get(id=game_id)   # ✅ MasterGameTable instance
 
-            # ✅ get values from MasterGameTable
-            boot_amount = Decimal(master_game.boot_price)
-            pot_limit = Decimal(master_game.max_bet_value) if master_game.max_bet_value else Decimal("0")
-            max_blind = master_game.max_players
-            chaal_limit = Decimal(master_game.players)
+            # ✅ Ensure at least one GameTable exists for this MasterGameTable
+            game_table, created = GameTable.objects.get_or_create(
+                game_master_table=master_game,
+                defaults={
+                    "boot_amount": Decimal(master_game.boot_price),
+                    "pot_limit": Decimal(master_game.max_bet_value) if master_game.max_bet_value else 0,
+                    "max_blind": master_game.max_players,
+                    "chaal_limit": master_game.players,
+                    "created_by": request.user
+                }
+            )
 
-            # ✅ update all GameTables linked to this MasterGameTable
+            # ✅ Update all GameTables linked to this Master
             game_tables = GameTable.objects.filter(game_master_table=master_game)
-            if not game_tables.exists():
-                return Response({'error': 'No GameTable linked to this MasterGameTable'}, status=status.HTTP_404_NOT_FOUND)
-
             for g in game_tables:
-                g.boot_amount = boot_amount
-                g.pot_limit = pot_limit
-                g.max_blind = max_blind
-                g.chaal_limit = chaal_limit
+                g.boot_amount = Decimal(master_game.boot_price)
+                g.pot_limit = Decimal(master_game.max_bet_value) if master_game.max_bet_value else 0
+                g.max_blind = master_game.max_players
+                g.chaal_limit = master_game.players
                 g.save()
 
-            # ✅ get all players under these GameTables
+            # ✅ Get all players under these GameTables
             players = Player.objects.filter(game__in=game_tables)
             if not players.exists():
                 return Response({'error': 'No players found for this game'}, status=status.HTTP_404_NOT_FOUND)
 
-            # ✅ create shuffled deck
+            # ✅ Create shuffled deck
             suits = ['hearts', 'diamonds', 'clubs', 'spades']
             ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
             deck = [{'suit': s, 'rank': r} for s in suits for r in ranks]
             random.shuffle(deck)
 
-            # ✅ distribute 3 cards each
+            # ✅ Distribute 3 cards each
             for player in players:
                 for _ in range(3):
                     card = deck.pop()
@@ -338,7 +341,7 @@ class DistributeCardsView(APIView):
                         suit=card['suit'],
                         rank=card['rank'],
                         player=player,
-                        game=player.game   # save under GameTable
+                        game=player.game   # GameTable
                     )
 
             return Response({'message': 'Cards distributed successfully and GameTable updated'}, status=status.HTTP_200_OK)
