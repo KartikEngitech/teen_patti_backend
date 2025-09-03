@@ -27,47 +27,21 @@ class GameTableView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
     def post(self, request):
+        """Player joins an existing game table."""
         try:
-            boot_amount = Decimal(request.data.get("boot_amount", "50.00"))
-            pot_limit = Decimal(request.data.get("pot_limit", "5000.00"))
-            max_blind = Decimal(request.data.get("max_blind", '4'))
-            chaal_limit = Decimal(request.data.get("chaal_limit", '128'))
+            game_id = request.data.get("game_id")
 
-            if pot_limit < boot_amount:
-                return Response(
-                    {"error": "Pot limit must be greater than or equal to boot amount."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            if not game_id:
+                return Response({"error": "game_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-            game = (
-                GameTable.objects
-                .annotate(player_count=models.Count('players'))
-                .filter(
-                    is_active=True,
-                    has_started=False,
-                    boot_amount=boot_amount,
-                    pot_limit=pot_limit,
-                    chaal_limit=chaal_limit,
-                    player_count__lt=3
-                )
-                .first()
-            )
+            game = GameTable.objects.get(id=game_id, is_active=True)
 
-            if not game:
-                game = GameTable.objects.create(
-                    created_by=request.user,
-                    boot_amount=boot_amount,
-                    pot_limit=pot_limit,
-                    has_started=False,
-                    max_blind=max_blind,
-                    chaal_limit=chaal_limit
-                )
-
+            # Prevent duplicate join
             if Player.objects.filter(user=request.user, game=game).exists():
-                return Response({'error': 'Already in game'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Already in this game'}, status=status.HTTP_400_BAD_REQUEST)
 
+            # Assign position
             last_pos = (
                 Player.objects.filter(game=game)
                 .order_by('-position')
@@ -80,34 +54,102 @@ class GameTableView(APIView):
                 user=request.user,
                 game=game,
                 position=position,
-                bet_amount=boot_amount
-            )
-
-            if Player.objects.filter(game=game).count() == 3:
-                game.has_started = True
-                game.save()
-
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    f'game_{game.id}',
-                    {'type': 'game_started'}
-                )
-
-            player_data = convert_uuids(PlayerSerializer(player).data)
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f'game_{game.id}',
-                {'type': 'player_joined', 'player': player_data}
+                bet_amount=game.boot_amount
             )
 
             return Response({
                 "message": "Joined game successfully",
-                "game_id": game.id,
-                "player": player_data
+                "game_id": str(game.id),
+                "player_id": str(player.id)
             }, status=status.HTTP_201_CREATED)
+
+        except GameTable.DoesNotExist:
+            return Response({'error': 'Game not found'}, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    # def post(self, request):
+    #     try:
+    #         boot_amount = Decimal(request.data.get("boot_amount", "50.00"))
+    #         pot_limit = Decimal(request.data.get("pot_limit", "5000.00"))
+    #         max_blind = Decimal(request.data.get("max_blind", '4'))
+    #         chaal_limit = Decimal(request.data.get("chaal_limit", '128'))
+
+    #         if pot_limit < boot_amount:
+    #             return Response(
+    #                 {"error": "Pot limit must be greater than or equal to boot amount."},
+    #                 status=status.HTTP_400_BAD_REQUEST
+    #             )
+
+    #         game = (
+    #             GameTable.objects
+    #             .annotate(player_count=models.Count('players'))
+    #             .filter(
+    #                 is_active=True,
+    #                 has_started=False,
+    #                 boot_amount=boot_amount,
+    #                 pot_limit=pot_limit,
+    #                 chaal_limit=chaal_limit,
+    #                 player_count__lt=3
+    #             )
+    #             .first()
+    #         )
+
+    #         if not game:
+    #             game = GameTable.objects.create(
+    #                 created_by=request.user,
+    #                 boot_amount=boot_amount,
+    #                 pot_limit=pot_limit,
+    #                 has_started=False,
+    #                 max_blind=max_blind,
+    #                 chaal_limit=chaal_limit
+    #             )
+
+    #         if Player.objects.filter(user=request.user, game=game).exists():
+    #             return Response({'error': 'Already in game'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #         last_pos = (
+    #             Player.objects.filter(game=game)
+    #             .order_by('-position')
+    #             .values_list('position', flat=True)
+    #             .first()
+    #         )
+    #         position = last_pos + 1 if last_pos is not None else 0
+
+    #         player = Player.objects.create(
+    #             user=request.user,
+    #             game=game,
+    #             position=position,
+    #             bet_amount=boot_amount
+    #         )
+
+    #         if Player.objects.filter(game=game).count() == 3:
+    #             game.has_started = True
+    #             game.save()
+
+    #             channel_layer = get_channel_layer()
+    #             async_to_sync(channel_layer.group_send)(
+    #                 f'game_{game.id}',
+    #                 {'type': 'game_started'}
+    #             )
+
+    #         player_data = convert_uuids(PlayerSerializer(player).data)
+    #         channel_layer = get_channel_layer()
+    #         async_to_sync(channel_layer.group_send)(
+    #             f'game_{game.id}',
+    #             {'type': 'player_joined', 'player': player_data}
+    #         )
+
+    #         return Response({
+    #             "message": "Joined game successfully",
+    #             "game_id": game.id,
+    #             "player": player_data
+    #         }, status=status.HTTP_201_CREATED)
+
+    #     except Exception as e:
+    #         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
