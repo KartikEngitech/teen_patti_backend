@@ -296,35 +296,33 @@ class DistributeCardsView(APIView):
 
 
     def post(self, request):
-        """Distribute 3 random cards to each player in the game and update tables."""
+        """Distribute 3 random cards to each player in the game and update GameTable from MasterGameTable values."""
         try:
-            # ✅ read values from request
-            boot_amount = Decimal(request.data.get("boot_amount", "50.00"))
-            pot_limit = Decimal(request.data.get("pot_limit", "5000.00"))
-            max_blind = Decimal(request.data.get("max_blind", '4'))
-            chaal_limit = Decimal(request.data.get("chaal_limit", '128'))
-
             game_id = request.query_params.get('game_id')
-            master_game = MasterGameTable.objects.get(id=game_id)   # ✅ Master table instance
+            master_game = MasterGameTable.objects.get(id=game_id)   # ✅ MasterGameTable instance
 
-            # ✅ update MasterGameTable fields (map request values into correct model fields)
-            master_game.boot_price = int(boot_amount)               # master uses boot_price
-            master_game.max_bet_value = str(pot_limit)              # master uses max_bet_value (CharField)
-            master_game.max_players = int(max_blind)                # reusing field since no max_blind exists
-            master_game.players = int(chaal_limit)                  # reusing field since no chaal_limit exists
-            master_game.save()
+            # ✅ get values from MasterGameTable
+            boot_amount = Decimal(master_game.boot_price)
+            pot_limit = Decimal(master_game.max_bet_value) if master_game.max_bet_value else Decimal("0")
+            max_blind = master_game.max_players
+            chaal_limit = Decimal(master_game.players)
 
             # ✅ update all GameTables linked to this MasterGameTable
             game_tables = GameTable.objects.filter(game_master_table=master_game)
+            if not game_tables.exists():
+                return Response({'error': 'No GameTable linked to this MasterGameTable'}, status=status.HTTP_404_NOT_FOUND)
+
             for g in game_tables:
                 g.boot_amount = boot_amount
                 g.pot_limit = pot_limit
-                g.max_blind = int(max_blind)
+                g.max_blind = max_blind
                 g.chaal_limit = chaal_limit
                 g.save()
 
-            # ✅ get all players in those GameTables
-            players = Player.objects.filter(game__game_master_table=master_game)
+            # ✅ get all players under these GameTables
+            players = Player.objects.filter(game__in=game_tables)
+            if not players.exists():
+                return Response({'error': 'No players found for this game'}, status=status.HTTP_404_NOT_FOUND)
 
             # ✅ create shuffled deck
             suits = ['hearts', 'diamonds', 'clubs', 'spades']
@@ -340,10 +338,10 @@ class DistributeCardsView(APIView):
                         suit=card['suit'],
                         rank=card['rank'],
                         player=player,
-                        game=player.game   # GameTable, not Master
+                        game=player.game   # save under GameTable
                     )
 
-            return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
+            return Response({'message': 'Cards distributed successfully and GameTable updated'}, status=status.HTTP_200_OK)
 
         except MasterGameTable.DoesNotExist:
             return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
