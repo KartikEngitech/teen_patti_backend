@@ -283,11 +283,28 @@ class DistributeCardsView(APIView):
     def post(self, request):
         """Distribute 3 random cards to each player in the game."""
         try:
+            # ✅ read values from request
+            boot_amount = Decimal(request.data.get("boot_amount", "50.00"))
+            pot_limit = Decimal(request.data.get("pot_limit", "5000.00"))
+            max_blind = Decimal(request.data.get("max_blind", '4'))
+            chaal_limit = Decimal(request.data.get("chaal_limit", '128'))
+
             game_id = request.query_params.get('game_id')
-            game = MasterGameTable.objects.get(id=game_id)   # ✅ Master table instance
+            master_game = MasterGameTable.objects.get(id=game_id)   # ✅ Master table instance
+
+            # ✅ find all GameTable(s) linked to this MasterGameTable
+            game_tables = GameTable.objects.filter(game_master_table=master_game)
+
+            # ✅ update each GameTable with values
+            for g in game_tables:
+                g.boot_amount = boot_amount
+                g.pot_limit = pot_limit
+                g.max_blind = int(max_blind)
+                g.chaal_limit = chaal_limit
+                g.save()
 
             # ✅ get all players via GameTable linked to this MasterGameTable
-            players = Player.objects.filter(game__game_master_table=game)
+            players = Player.objects.filter(game__game_master_table=master_game)
 
             suits = ['hearts', 'diamonds', 'clubs', 'spades']
             ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
@@ -297,8 +314,12 @@ class DistributeCardsView(APIView):
             for player in players:
                 for _ in range(3):
                     card = deck.pop()
-                    Card.objects.create(suit=card['suit'], rank=card['rank'], player=player, game=player.game)  
-                    # ✅ use player.game (GameTable) instead of MasterGameTable
+                    Card.objects.create(
+                        suit=card['suit'],
+                        rank=card['rank'],
+                        player=player,
+                        game=player.game   # ✅ still save under GameTable
+                    )
 
             return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
 
