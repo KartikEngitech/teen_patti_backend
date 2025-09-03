@@ -281,7 +281,7 @@ class DistributeCardsView(APIView):
 
 
     def post(self, request):
-        """Distribute 3 random cards to each player in the game."""
+        """Distribute 3 random cards to each player in the game and update tables."""
         try:
             # ✅ read values from request
             boot_amount = Decimal(request.data.get("boot_amount", "50.00"))
@@ -292,10 +292,15 @@ class DistributeCardsView(APIView):
             game_id = request.query_params.get('game_id')
             master_game = MasterGameTable.objects.get(id=game_id)   # ✅ Master table instance
 
-            # ✅ find all GameTable(s) linked to this MasterGameTable
-            game_tables = GameTable.objects.filter(game_master_table=master_game)
+            # ✅ update MasterGameTable fields (map request values into correct model fields)
+            master_game.boot_price = int(boot_amount)               # master uses boot_price
+            master_game.max_bet_value = str(pot_limit)              # master uses max_bet_value (CharField)
+            master_game.max_players = int(max_blind)                # reusing field since no max_blind exists
+            master_game.players = int(chaal_limit)                  # reusing field since no chaal_limit exists
+            master_game.save()
 
-            # ✅ update each GameTable with values
+            # ✅ update all GameTables linked to this MasterGameTable
+            game_tables = GameTable.objects.filter(game_master_table=master_game)
             for g in game_tables:
                 g.boot_amount = boot_amount
                 g.pot_limit = pot_limit
@@ -303,14 +308,16 @@ class DistributeCardsView(APIView):
                 g.chaal_limit = chaal_limit
                 g.save()
 
-            # ✅ get all players via GameTable linked to this MasterGameTable
+            # ✅ get all players in those GameTables
             players = Player.objects.filter(game__game_master_table=master_game)
 
+            # ✅ create shuffled deck
             suits = ['hearts', 'diamonds', 'clubs', 'spades']
             ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
             deck = [{'suit': s, 'rank': r} for s in suits for r in ranks]
             random.shuffle(deck)
 
+            # ✅ distribute 3 cards each
             for player in players:
                 for _ in range(3):
                     card = deck.pop()
@@ -318,7 +325,7 @@ class DistributeCardsView(APIView):
                         suit=card['suit'],
                         rank=card['rank'],
                         player=player,
-                        game=player.game   # ✅ still save under GameTable
+                        game=player.game   # GameTable, not Master
                     )
 
             return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
