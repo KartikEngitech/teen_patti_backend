@@ -28,24 +28,44 @@ class GameTableView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request):
-        """Player joins an existing game table."""
+        """Player joins or re-joins a game table."""
         try:
             game_id = request.data.get("game_id")
-
             if not game_id:
-                return Response({"error": "game_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "game_id is required"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            game = GameTable.objects.get(id=game_id, is_active=True)
+            # Check if requested game exists
+            try:
+                game = GameTable.objects.get(id=game_id, is_active=True)
+            except GameTable.DoesNotExist:
+                return Response(
+                    {"error": "Game not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-            # Prevent duplicate join
-            if Player.objects.filter(user=request.user, game=game).exists():
-                return Response({'error': 'Already in this game'}, status=status.HTTP_400_BAD_REQUEST)
+            # --- Rejoin logic ---
+            existing_player = Player.objects.filter(user=request.user, game=game).first()
+            if existing_player:
+                return Response({
+                    "message": "Re-joined existing game",
+                    "game_id": str(game.id),
+                    "player_id": str(existing_player.id),
+                    "position": existing_player.position,
+                }, status=status.HTTP_200_OK)
 
-            # Assign position
+            # --- Optional: allow multiple rooms OR force one room ---
+            # If you want to restrict user to ONE game at a time:
+            # Player.objects.filter(user=request.user).update(is_active=False)
+            # Or: delete their old seat from other tables
+
+            # Assign next position
             last_pos = (
                 Player.objects.filter(game=game)
-                .order_by('-position')
-                .values_list('position', flat=True)
+                .order_by("-position")
+                .values_list("position", flat=True)
                 .first()
             )
             position = last_pos + 1 if last_pos is not None else 0
@@ -54,20 +74,21 @@ class GameTableView(APIView):
                 user=request.user,
                 game=game,
                 position=position,
-                bet_amount=game.boot_amount
+                bet_amount=game.boot_amount,
             )
 
             return Response({
                 "message": "Joined game successfully",
                 "game_id": str(game.id),
-                "player_id": str(player.id)
+                "player_id": str(player.id),
+                "position": position,
             }, status=status.HTTP_201_CREATED)
 
-        except GameTable.DoesNotExist:
-            return Response({'error': 'Game not found'}, status=status.HTTP_404_NOT_FOUND)
-
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
     # def post(self, request):
