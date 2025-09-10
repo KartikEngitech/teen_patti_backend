@@ -48,9 +48,11 @@ class GameTableView(APIView):
                 )
 
             channel_layer = get_channel_layer()
+            print('channel_layer====',channel_layer)
 
             # --- Rejoin logic ---
             existing_player = Player.objects.filter(user=request.user, game=game).first()
+            print('existing_player=====',existing_player)
             if existing_player:
                 async_to_sync(channel_layer.group_send)(
                     f"game_{game.id}",
