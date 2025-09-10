@@ -54,6 +54,21 @@ class GameTableView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
 
+class CreateGameView(APIView):
+    def post(self, request):
+        try:
+            # Create a new game
+            game = GameTable.objects.create(
+                id=uuid.uuid4(),  # generate unique game id
+                is_active=True
+            )
+            return Response(
+                {"game_id": str(game.id), "message": "Game created successfully"},
+                status=status.HTTP_201_CREATED
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
+
 
 class PlayerView(APIView):
     permission_classes = [permissions.IsAuthenticated]

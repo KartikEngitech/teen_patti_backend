@@ -8,6 +8,7 @@ urlpatterns = [
     path('bet/', BetView.as_view()),
     path('ranking/', HandRankingView.as_view()),
     path('spin-wheel/', SpinWheelAPIView.as_view(), name='spin-wheel'),
+    path("game/start/", StartGameView.as_view(), name="start-game"),
 
 
     

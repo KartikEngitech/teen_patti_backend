@@ -15,6 +15,7 @@ from .serializers import PlayerSerializer
 from .utils import  *
 from datetime import date
 
+
 class GameTableView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -33,7 +34,7 @@ class GameTableView(APIView):
             game_id = request.data.get("game_id")
             if not game_id:
                 return Response(
-                    {"error": "game_id is required"}, 
+                    {"error": "game_id is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -46,20 +47,29 @@ class GameTableView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
+            channel_layer = get_channel_layer()
+
             # --- Rejoin logic ---
             existing_player = Player.objects.filter(user=request.user, game=game).first()
             if existing_player:
+                async_to_sync(channel_layer.group_send)(
+                    f"game_{game.id}",
+                    {
+                        "type": "player_joined",
+                        "player": {
+                            "id": str(existing_player.id),
+                            "email": existing_player.user.email,
+                            "position": existing_player.position,
+                        },
+                    },
+                )
+
                 return Response({
                     "message": "Re-joined existing game",
                     "game_id": str(game.id),
                     "player_id": str(existing_player.id),
                     "position": existing_player.position,
                 }, status=status.HTTP_200_OK)
-
-            # --- Optional: allow multiple rooms OR force one room ---
-            # If you want to restrict user to ONE game at a time:
-            # Player.objects.filter(user=request.user).update(is_active=False)
-            # Or: delete their old seat from other tables
 
             # Assign next position
             last_pos = (
@@ -77,6 +87,30 @@ class GameTableView(APIView):
                 bet_amount=game.boot_amount,
             )
 
+            # Broadcast player join event
+            async_to_sync(channel_layer.group_send)(
+                f"game_{game.id}",
+                {
+                    "type": "player_joined",
+                    "player": {
+                        "id": str(player.id),
+                        "email": player.user.email,
+                        "position": player.position,
+                    },
+                },
+            )
+
+            # Optional: auto-start when enough players join (example: 3)
+            total_players = Player.objects.filter(game=game).count()
+            if total_players >= 3:
+                async_to_sync(channel_layer.group_send)(
+                    f"game_{game.id}",
+                    {
+                        "type": "game_started",
+                        "event": {"game_id": str(game.id), "total_players": total_players},
+                    },
+                )
+
             return Response({
                 "message": "Joined game successfully",
                 "game_id": str(game.id),
@@ -89,6 +123,86 @@ class GameTableView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+
+
+
+
+# class GameTableView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         """Retrieve all game tables."""
+#         try:
+#             games = GameTable.objects.all()
+#             serializer = GameTableSerializer(games, many=True)
+#             return Response(serializer.data)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#     def post(self, request):
+#         """Player joins or re-joins a game table."""
+#         try:
+#             game_id = request.data.get("game_id")
+#             if not game_id:
+#                 return Response(
+#                     {"error": "game_id is required"}, 
+#                     status=status.HTTP_400_BAD_REQUEST
+#                 )
+
+#             # Check if requested game exists
+#             try:
+#                 game = GameTable.objects.get(id=game_id, is_active=True)
+#             except GameTable.DoesNotExist:
+#                 return Response(
+#                     {"error": "Game not found"},
+#                     status=status.HTTP_404_NOT_FOUND
+#                 )
+
+#             # --- Rejoin logic ---
+#             existing_player = Player.objects.filter(user=request.user, game=game).first()
+#             if existing_player:
+#                 return Response({
+#                     "message": "Re-joined existing game",
+#                     "game_id": str(game.id),
+#                     "player_id": str(existing_player.id),
+#                     "position": existing_player.position,
+#                 }, status=status.HTTP_200_OK)
+
+#             # --- Optional: allow multiple rooms OR force one room ---
+#             # If you want to restrict user to ONE game at a time:
+#             # Player.objects.filter(user=request.user).update(is_active=False)
+#             # Or: delete their old seat from other tables
+
+#             # Assign next position
+#             last_pos = (
+#                 Player.objects.filter(game=game)
+#                 .order_by("-position")
+#                 .values_list("position", flat=True)
+#                 .first()
+#             )
+#             position = last_pos + 1 if last_pos is not None else 0
+
+#             player = Player.objects.create(
+#                 user=request.user,
+#                 game=game,
+#                 position=position,
+#                 bet_amount=game.boot_amount,
+#             )
+
+#             return Response({
+#                 "message": "Joined game successfully",
+#                 "game_id": str(game.id),
+#                 "player_id": str(player.id),
+#                 "position": position,
+#             }, status=status.HTTP_201_CREATED)
+
+#         except Exception as e:
+#             return Response(
+#                 {"error": str(e)},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+#             )
 
 
     # def post(self, request):
@@ -519,6 +633,31 @@ class BetView(APIView):
 
 
 CARD_RANK_ORDER = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
+class StartGameView(APIView):
+    def post(self, request):
+        game_id = request.data.get("game_id")
+        if not game_id:
+            return Response({"error": "game_id required"}, status=400)
+
+        game = get_object_or_404(GameTable, id=game_id, is_active=True)
+
+        if game.has_started:
+            return Response({"error": "Game already started"}, status=400)
+
+        game.has_started = True
+        game.save()
+
+        # Broadcast event
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"game_{game_id}",
+            {
+                "type": "game_started",
+                "event": {"game_id": str(game.id), "message": "Game started!"}
+            }
+        )
+
+        return Response({"message": "Game started successfully", "game_id": str(game.id)}, status=200)
 
 
 class HandRankingView(APIView):
