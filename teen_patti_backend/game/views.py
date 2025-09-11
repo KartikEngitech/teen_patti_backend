@@ -964,27 +964,27 @@ class TransferBonusToWalletAPIView(APIView):
 
 
 
-class MasterCardMasterCard(APIView):
-    def get(self, request):
-        cards = MasterCard.objects.all()
-        serializer = MasterCardSerializer(cards, many=True, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+# class MasterCardMasterCard(APIView):
+#     def get(self, request):
+#         cards = MasterCard.objects.all()
+#         serializer = MasterCardSerializer(cards, many=True, context={'request': request})
+#         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request):
-        serializer = MasterCardSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     def post(self, request):
+#         serializer = MasterCardSerializer(data=request.data, context={'request': request})
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-    def delete(self, request, master_card_id=None):
-        try:
-            card = MasterCard.objects.get(master_card_id=master_card_id)
-            card.delete()
-            return Response({"message": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-        except MasterCard.DoesNotExist:
-            return Response({"error": "Card not found."}, status=status.HTTP_404_NOT_FOUND)
+#     def delete(self, request, master_card_id=None):
+#         try:
+#             card = MasterCard.objects.get(master_card_id=master_card_id)
+#             card.delete()
+#             return Response({"message": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+#         except MasterCard.DoesNotExist:
+#             return Response({"error": "Card not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 
