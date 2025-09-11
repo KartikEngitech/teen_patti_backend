@@ -434,7 +434,7 @@ class DistributeCardsView(APIView):
                 return Response({'error': 'Game ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
             player = Player.objects.get(user=request.user, game_id=game_id)
-            cards = Card.objects.filter(player=player, game_id=game_id).order_by('-distributed_at')[:3]
+            cards = Card.objects.filter(player=player, game_id=game_id).order_by('distributed_at')[:3]
             
             if not cards.exists():
                 return Response({'message': 'No cards found for this player'}, status=status.HTTP_404_NOT_FOUND)
