@@ -100,6 +100,8 @@ class Card(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     suit = models.CharField(choices=SUITS, max_length=10)
     rank = models.CharField(choices=RANKS, max_length=2)
+    image = models.ImageField(upload_to='cards/', null=True, blank=True)  # 🔹 new field
+    
     player = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True, related_name='cards')
     game = models.ForeignKey(GameTable, on_delete=models.CASCADE, related_name='cards')
 
