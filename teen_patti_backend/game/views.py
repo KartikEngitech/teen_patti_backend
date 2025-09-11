@@ -19,12 +19,34 @@ from datetime import date
 class GameTableView(APIView):
     permission_classes = [IsAuthenticated]
 
+    # def get(self, request):
+    #     """Retrieve all game tables."""
+    #     try:
+    #         games = GameTable.objects.all()
+    #         serializer = GameTableSerializer(games, many=True)
+    #         return Response(serializer.data)
+    #     except Exception as e:
+    #         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
     def get(self, request):
-        """Retrieve all game tables."""
+        """Retrieve all game tables with online users count."""
         try:
             games = GameTable.objects.all()
-            serializer = GameTableSerializer(games, many=True)
-            return Response(serializer.data)
+            data = []
+
+            for game in games:
+                serializer = GameTableSerializer(game)
+                
+                # Count online users for this specific game table
+                online_users_count = game.players.filter(is_active=True).count()
+                
+                game_data = serializer.data
+                game_data['online_users_count'] = online_users_count
+                data.append(game_data)
+
+            return Response(data)
+
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
