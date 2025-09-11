@@ -441,12 +441,46 @@ class DistributeCardsView(APIView):
 
             for player in players:
                 for _ in range(3):
-                    card = deck.pop()
-                    Card.objects.create(suit=card['suit'], rank=card['rank'], player=player, game=game)
+                    card_data = deck.pop()
+
+                    # 🔹 Fetch matching MasterCard for image
+                    master_card = MasterCard.objects.filter(
+                        suit=card_data['suit'], rank=card_data['rank']
+                    ).first()
+
+                    Card.objects.create(
+                        suit=card_data['suit'],
+                        rank=card_data['rank'],
+                        image=master_card.image if master_card else None,  # copy image
+                        player=player,
+                        game=game
+                    )
 
             return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
         except GameTable.DoesNotExist:
             return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    # def post(self, request):
+    #     """Distribute 3 random cards to each player in the game."""
+    #     try:
+    #         game_id = request.query_params.get('game_id')
+    #         game = GameTable.objects.get(id=game_id)
+    #         players = game.players.all()
+
+    #         suits = ['hearts', 'diamonds', 'clubs', 'spades']
+    #         ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+    #         deck = [{'suit': s, 'rank': r} for s in suits for r in ranks]
+    #         random.shuffle(deck)
+
+    #         for player in players:
+    #             for _ in range(3):
+    #                 card = deck.pop()
+    #                 Card.objects.create(suit=card['suit'], rank=card['rank'], player=player, game=game)
+
+    #         return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
+    #     except GameTable.DoesNotExist:
+    #         return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -964,27 +998,27 @@ class TransferBonusToWalletAPIView(APIView):
 
 
 
-# class MasterCardMasterCard(APIView):
-#     def get(self, request):
-#         cards = MasterCard.objects.all()
-#         serializer = MasterCardSerializer(cards, many=True, context={'request': request})
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+class MasterCardMasterCard(APIView):
+    def get(self, request):
+        cards = MasterCard.objects.all()
+        serializer = MasterCardSerializer(cards, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-#     def post(self, request):
-#         serializer = MasterCardSerializer(data=request.data, context={'request': request})
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        serializer = MasterCardSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-#     def delete(self, request, master_card_id=None):
-#         try:
-#             card = MasterCard.objects.get(master_card_id=master_card_id)
-#             card.delete()
-#             return Response({"message": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-#         except MasterCard.DoesNotExist:
-#             return Response({"error": "Card not found."}, status=status.HTTP_404_NOT_FOUND)
+    def delete(self, request, master_card_id=None):
+        try:
+            card = MasterCard.objects.get(master_card_id=master_card_id)
+            card.delete()
+            return Response({"message": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except MasterCard.DoesNotExist:
+            return Response({"error": "Card not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 
