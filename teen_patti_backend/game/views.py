@@ -14,7 +14,7 @@ from asgiref.sync import async_to_sync
 from .serializers import PlayerSerializer
 from .utils import  *
 from datetime import date
-
+from django.utils import timezone
 
 class GameTableView(APIView):
     permission_classes = [IsAuthenticated]
