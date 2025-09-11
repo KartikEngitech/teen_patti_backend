@@ -11,6 +11,7 @@ urlpatterns = [
     path("game/start/", StartGameView.as_view(), name="start-game"),
     
     path("mastercards/", MasterCardMasterCard.as_view(), name="mastercards"),
+    path('mastercards/<int:master_card_id>/', MasterCardMasterCard.as_view(), name='mastercard-detail'),
 
 
     

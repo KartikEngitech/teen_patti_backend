@@ -978,4 +978,13 @@ class MasterCardMasterCard(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+    def delete(self, request, master_card_id=None):
+        try:
+            card = MasterCard.objects.get(master_card_id=master_card_id)
+            card.delete()
+            return Response({"message": "Card deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except MasterCard.DoesNotExist:
+            return Response({"error": "Card not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
 
