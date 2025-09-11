@@ -101,9 +101,13 @@ class Card(models.Model):
     suit = models.CharField(choices=SUITS, max_length=10)
     rank = models.CharField(choices=RANKS, max_length=2)
     image = models.ImageField(upload_to='cards/', null=True, blank=True)  # 🔹 new field
-    
+
     player = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True, related_name='cards')
     game = models.ForeignKey(GameTable, on_delete=models.CASCADE, related_name='cards')
+
+    # 🔹 new field for storing distribution time
+    distributed_at = models.DateTimeField(null=True, blank=True, default=None)
+    
 
     def __str__(self):
         return f"{self.rank} of {self.suit} user :- {self.player.user.email} in {self.game.id}"

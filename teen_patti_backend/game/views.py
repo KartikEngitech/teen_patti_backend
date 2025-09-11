@@ -485,7 +485,8 @@ class DistributeCardsView(APIView):
                         rank=card_data['rank'],
                         image=image_path,
                         player=player,
-                        game=game
+                        game=game,
+                        distributed_at=timezone.now()  # 🔹 explicitly set
                     )
 
             return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
