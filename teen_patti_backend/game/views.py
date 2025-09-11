@@ -426,7 +426,7 @@ class DistributeCardsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """Retrieve the latest set of 3 cards assigned to the logged-in player for a specific game."""
+        """Retrieve the cards assigned to the logged-in player for a specific game."""
         try:
             game_id = request.query_params.get('game_id')
 
@@ -434,20 +434,12 @@ class DistributeCardsView(APIView):
                 return Response({'error': 'Game ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
             player = Player.objects.get(user=request.user, game_id=game_id)
-
-            # 🔹 Get all cards of this player in this game
             cards = Card.objects.filter(player=player, game_id=game_id)
-
+            
             if not cards.exists():
                 return Response({'message': 'No cards found for this player'}, status=status.HTTP_404_NOT_FOUND)
 
-            # 🔹 Get the latest distribution timestamp
-            latest_time = cards.order_by('-distributed_at').values_list('distributed_at', flat=True).first()
-
-            # 🔹 Filter only cards with that timestamp
-            latest_cards = cards.filter(distributed_at=latest_time)
-
-            serializer = CardSerializer(latest_cards, many=True)
+            serializer = CardSerializer(cards, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         except Player.DoesNotExist:
@@ -455,29 +447,6 @@ class DistributeCardsView(APIView):
 
         except GameTable.DoesNotExist:
             return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # def get(self, request):
-    #     """Retrieve the cards assigned to the logged-in player for a specific game."""
-    #     try:
-    #         game_id = request.query_params.get('game_id')
-
-    #         if not game_id:
-    #             return Response({'error': 'Game ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-    #         player = Player.objects.get(user=request.user, game_id=game_id)
-    #         cards = Card.objects.filter(player=player, game_id=game_id)
-            
-    #         if not cards.exists():
-    #             return Response({'message': 'No cards found for this player'}, status=status.HTTP_404_NOT_FOUND)
-
-    #         serializer = CardSerializer(cards, many=True)
-    #         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    #     except Player.DoesNotExist:
-    #         return Response({'error': 'Player not found in this game'}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     except GameTable.DoesNotExist:
-    #         return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
