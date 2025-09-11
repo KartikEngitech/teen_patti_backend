@@ -427,8 +427,9 @@ class DistributeCardsView(APIView):
             return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+
     def post(self, request):
-        """Distribute 3 random cards to each player in the game."""
+        """Distribute 3 random cards to each player in the game, ensuring images are saved."""
         try:
             game_id = request.query_params.get('game_id')
             game = GameTable.objects.get(id=game_id)
@@ -436,6 +437,8 @@ class DistributeCardsView(APIView):
 
             suits = ['hearts', 'diamonds', 'clubs', 'spades']
             ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+
+            # Create a full deck and shuffle
             deck = [{'suit': s, 'rank': r} for s in suits for r in ranks]
             random.shuffle(deck)
 
@@ -443,20 +446,28 @@ class DistributeCardsView(APIView):
                 for _ in range(3):
                     card_data = deck.pop()
 
-                    # 🔹 Fetch matching MasterCard for image
+                    # Try fetching the MasterCard for image
                     master_card = MasterCard.objects.filter(
                         suit=card_data['suit'], rank=card_data['rank']
                     ).first()
 
+                    # Fallback to a filename pattern if MasterCard missing
+                    if master_card and master_card.image:
+                        image_path = master_card.image
+                    else:
+                        image_path = f"/cards/{card_data['suit'].capitalize()}-{card_data['rank']}.png"
+
+                    # Save the card
                     Card.objects.create(
                         suit=card_data['suit'],
                         rank=card_data['rank'],
-                        image=master_card.image if master_card else None,  # copy image
+                        image=image_path,
                         player=player,
                         game=game
                     )
 
             return Response({'message': 'Cards distributed successfully'}, status=status.HTTP_200_OK)
+
         except GameTable.DoesNotExist:
             return Response({'error': 'Game not found'}, status=status.HTTP_400_BAD_REQUEST)
 
