@@ -118,3 +118,37 @@ class Bet(models.Model):
 
     def __str__(self):
         return f"{self.player.user.email} bet {self.amount} in {self.game.id}"
+
+
+
+class MasterCard(models.Model):
+    SUITS = [
+        ('hearts', 'Hearts'),
+        ('diamonds', 'Diamonds'),
+        ('spades', 'Spades'),
+        ('clubs', 'Clubs'),
+    ]
+
+    RANKS = [
+        ('A', 'Ace'),
+        ('2', '2'),
+        ('3', '3'),
+        ('4', '4'),
+        ('5', '5'),
+        ('6', '6'),
+        ('7', '7'),
+        ('8', '8'),
+        ('9', '9'),
+        ('10', '10'),
+        ('J', 'Jack'),
+        ('Q', 'Queen'),
+        ('K', 'King'),
+    ]
+
+    master_card_id = models.AutoField(primary_key=True)   # custom primary key
+    suit = models.CharField(max_length=10, choices=SUITS)
+    rank = models.CharField(max_length=5, choices=RANKS)
+    image = models.ImageField(upload_to='cards/')
+
+    def __str__(self):
+        return f"{self.rank} of {self.suit.capitalize()}"

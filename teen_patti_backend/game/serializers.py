@@ -41,3 +41,9 @@ class BetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bet
         fields = '__all__'
+
+
+class MasterCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MasterCard
+        fields = ['master_card_id', 'suit', 'rank', 'image']

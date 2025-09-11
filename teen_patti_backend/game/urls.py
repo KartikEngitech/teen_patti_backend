@@ -9,6 +9,8 @@ urlpatterns = [
     path('ranking/', HandRankingView.as_view()),
     path('spin-wheel/', SpinWheelAPIView.as_view(), name='spin-wheel'),
     path("game/start/", StartGameView.as_view(), name="start-game"),
+    
+    path("mastercards/", MasterCardMasterCard.as_view(), name="mastercards"),
 
 
     
