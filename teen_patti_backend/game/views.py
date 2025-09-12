@@ -1102,8 +1102,22 @@ class BonusWalletBalanceAPIView(APIView):
         user = request.user
         try:
             wallet = BonusWallet.objects.get(user=user)
-            serializer = BonusWalletSerializer(wallet)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+
+            # ✅ Sum all spin rewards of the user
+            from django.db.models import Sum
+            from .models import SpinHistory   # adjust import path if needed
+
+            total_spin_reward = SpinHistory.objects.filter(user=user).aggregate(
+                total=Sum('reward')
+            )['total'] or 0
+
+            # ✅ Add spin rewards to wallet balance
+            total_balance = wallet.bonus_balance + total_spin_reward
+
+            return Response(
+                {"bonus_balance": str(total_balance)},
+                status=status.HTTP_200_OK
+            )
         except BonusWallet.DoesNotExist:
             return Response(
                 {"bonus_balance": "0.00"},  # default if no wallet exists
