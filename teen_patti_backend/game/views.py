@@ -946,27 +946,19 @@ class SpinWheelAPIView(APIView):
         if SpinHistory.objects.filter(user=user, date=today).exists():
             return Response({"message": "You have already used your spin for today!"}, status=403)
 
-        games_played = Player.objects.filter(user=user).count()
+        # ✅ reward will come from frontend when wheel stops
+        reward_value = request.data.get("reward")   # e.g. 5, 10, 50, 1000 etc.
+        if reward_value is None:
+            return Response({"message": "Reward not provided!"}, status=400)
 
-        reward_tiers = {
-            (0, 10): None,
-            (11, 40): Decimal('10.00'),
-            (41, 60): Decimal('15.00'),
-            (61, 100): Decimal('50.00'),
-            (101, 200): Decimal('100.00'),
-            (201, float('inf')): Decimal('100.00'),
-        }
+        reward = Decimal(str(reward_value))
 
-        reward = None
-        for (min_games, max_games), amount in reward_tiers.items():
-            if min_games <= games_played <= max_games:
-                reward = amount
-                break
-
-        if reward is None:
+        if reward <= 0:
+            # spin landed on 'Better luck next time'
             SpinHistory.objects.create(user=user)
             return Response({"message": "Better luck next time!"}, status=200)
 
+        # Add reward to wallet
         bonus_wallet, _ = BonusWallet.objects.get_or_create(user=user)
         bonus_wallet.bonus_balance += reward
         bonus_wallet.save()
@@ -985,6 +977,52 @@ class SpinWheelAPIView(APIView):
             "message": f"You won ₹{reward} in Bonus Wallet!",
             "reward": float(reward)
         }, status=200)
+    # def post(self, request):
+    #     user = request.user
+    #     today = date.today()
+
+    #     if SpinHistory.objects.filter(user=user, date=today).exists():
+    #         return Response({"message": "You have already used your spin for today!"}, status=403)
+
+    #     games_played = Player.objects.filter(user=user).count()
+
+    #     reward_tiers = {
+    #         (0, 10): None,
+    #         (11, 40): Decimal('10.00'),
+    #         (41, 60): Decimal('15.00'),
+    #         (61, 100): Decimal('50.00'),
+    #         (101, 200): Decimal('100.00'),
+    #         (201, float('inf')): Decimal('100.00'),
+    #     }
+
+    #     reward = None
+    #     for (min_games, max_games), amount in reward_tiers.items():
+    #         if min_games <= games_played <= max_games:
+    #             reward = amount
+    #             break
+
+    #     if reward is None:
+    #         SpinHistory.objects.create(user=user)
+    #         return Response({"message": "Better luck next time!"}, status=200)
+
+    #     bonus_wallet, _ = BonusWallet.objects.get_or_create(user=user)
+    #     bonus_wallet.bonus_balance += reward
+    #     bonus_wallet.save()
+
+    #     Transaction.objects.create(
+    #         user=user,
+    #         transaction_type='win',
+    #         amount=reward,
+    #         game=None,
+    #         position=0
+    #     )
+
+    #     SpinHistory.objects.create(user=user)
+
+    #     return Response({
+    #         "message": f"You won ₹{reward} in Bonus Wallet!",
+    #         "reward": float(reward)
+    #     }, status=200)
 
 
 
