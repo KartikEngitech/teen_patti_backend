@@ -938,7 +938,8 @@ class SpinWheelAPIView(APIView):
     #     }, status=200)
 
 
-    def get(self, request):
+    # def get(self, request):
+    def post(self, request):
         user = request.user
         today = date.today()
 
