@@ -1094,35 +1094,25 @@ class MasterCardMasterCard(APIView):
             return Response({"error": "Card not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-
 class BonusWalletBalanceAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
         try:
+            # ✅ Get wallet balance directly (spin rewards are already saved here)
             wallet = BonusWallet.objects.get(user=user)
-
-            # ✅ Sum all spin rewards of the user
-            from django.db.models import Sum
-            from .models import SpinHistory   # adjust import path if needed
-
-            total_spin_reward = SpinHistory.objects.filter(user=user).aggregate(
-                total=Sum('reward')
-            )['total'] or 0
-
-            # ✅ Add spin rewards to wallet balance
-            total_balance = wallet.bonus_balance + total_spin_reward
-
             return Response(
-                {"bonus_balance": str(total_balance)},
+                {"bonus_balance": str(wallet.bonus_balance)},
                 status=status.HTTP_200_OK
             )
         except BonusWallet.DoesNotExist:
+            # ✅ If wallet does not exist, return 0
             return Response(
-                {"bonus_balance": "0.00"},  # default if no wallet exists
+                {"bonus_balance": "0.00"},
                 status=status.HTTP_200_OK
             )
+
 
 
 
