@@ -951,7 +951,7 @@ class SpinWheelAPIView(APIView):
         if reward_value is None:
             return Response({"message": "Reward not provided!"}, status=400)
 
-        reward = Decimal(str(reward_value))
+        reward = float(reward_value)   # ✅ use float to match your wallet/transaction fields
 
         if reward <= 0:
             # spin landed on 'Better luck next time'
@@ -960,7 +960,7 @@ class SpinWheelAPIView(APIView):
 
         # Add reward to wallet
         bonus_wallet, _ = BonusWallet.objects.get_or_create(user=user)
-        bonus_wallet.bonus_balance += reward
+        bonus_wallet.bonus_balance += reward   # ✅ no TypeError now
         bonus_wallet.save()
 
         Transaction.objects.create(
@@ -975,7 +975,7 @@ class SpinWheelAPIView(APIView):
 
         return Response({
             "message": f"You won ₹{reward} in Bonus Wallet!",
-            "reward": float(reward)
+            "reward": reward
         }, status=200)
     # def post(self, request):
     #     user = request.user
