@@ -13,6 +13,8 @@ urlpatterns = [
     path("mastercards/", MasterCardMasterCard.as_view(), name="mastercards"),
     path('mastercards/<int:master_card_id>/', MasterCardMasterCard.as_view(), name='mastercard-detail'),
 
+    path('bonus-wallet/balance/', BonusWalletBalanceAPIView.as_view(), name='bonus-wallet-balance'),
+
 
     
 

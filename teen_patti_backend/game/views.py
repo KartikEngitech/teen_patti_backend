@@ -1095,3 +1095,20 @@ class MasterCardMasterCard(APIView):
 
 
 
+class BonusWalletBalanceAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        try:
+            wallet = BonusWallet.objects.get(user=user)
+            serializer = BonusWalletSerializer(wallet)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except BonusWallet.DoesNotExist:
+            return Response(
+                {"bonus_balance": "0.00"},  # default if no wallet exists
+                status=status.HTTP_200_OK
+            )
+
+
+

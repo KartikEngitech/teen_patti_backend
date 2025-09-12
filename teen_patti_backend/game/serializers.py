@@ -47,3 +47,10 @@ class MasterCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = MasterCard
         fields = ['master_card_id', 'suit', 'rank', 'image']
+
+
+
+class BonusWalletSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BonusWallet
+        fields = '__all__'
